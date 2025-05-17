@@ -1,12 +1,25 @@
 {
-  "name": "dr-bitcoin",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  }
+	"name": "dr-bitcoin",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@voltagent/core": "^0.1.19",
+		"boxen": "^8.0.1",
+		"chalk": "^5.4.1",
+		"enquirer": "^2.4.1",
+		"inference-grid-sdk": "^0.0.8"
+	},
+	"scripts": {
+		"lint": "biome lint .",
+		"format": "biome format . --write",
+		"check": "biome check ."
+	}
 }
