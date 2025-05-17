@@ -19,3 +19,11 @@ Or just enter this directory and run:
 nix develop
 ```
 
+## Usage
+
+Run the agent and start a CLI chat with:
+
+```
+bun agent
+```
+
