@@ -1,6 +1,8 @@
 import { InferenceGrid, Role, type Message } from "inference-grid-sdk";
 import { ToolRegistry } from "./tool-registry";
-import { ConsoleInvoiceHandler, type IInvoiceHandler } from "./invoice-handler";
+import { ConsoleInvoiceHandler } from "./invoice-handler";
+import type { IInvoiceHandler } from './IInvoiceHandler';  // Assuming you have this interface
+
 
 export type AgentConfig = {
   systemPrompt: string;
