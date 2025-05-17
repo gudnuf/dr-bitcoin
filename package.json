@@ -20,8 +20,11 @@
 		"@voltagent/vercel-ai": "^0.1.8",
 		"boxen": "^8.0.1",
 		"chalk": "^5.4.1",
+		"dotenv": "^16.5.0",
 		"enquirer": "^2.4.1",
 		"inference-grid-sdk": "^0.0.8",
+		"nostr-tools": "^2.13.0",
+		"ws": "^8.18.2"
 		"zod": "^3.24.4"
 	},
 	"scripts": {
@@ -29,6 +32,8 @@
 		"format": "biome format . --write",
 		"check": "biome check .",
 		"agent": "bun run src/agent/main.ts",
+		"nostr-demo": "bun run src/demo-nostr-agent.ts",
+		"nostr-keys": "bun run src/tools/nostr/keys-cli.ts"
 		"autonomous": "bun run src/autonomous.ts",
 		"dev:agent": "bun run --watch src/agent/main.ts",
 		"dev:autonomous": "bun run --watch src/autonomous.ts",
