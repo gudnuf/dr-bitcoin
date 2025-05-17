@@ -8,7 +8,7 @@ export class NostrService {
 
 	private constructor() {
 		const relays =
-			process.env.RELAYS || "wss://relay.damus.io,wss://relay.snort.social";
+			process.env.RELAYS || "wss://relay.damus.io,wss://relay.snort.social,wss://nos.lol,wss://relay.primal.net,wss://nos.lol,wss://nos.lol/";
 		this.relayUrls = relays.split(",");
 		this.pool = new SimplePool();
 		console.log(`🌊 Connected to relays: ${this.relayUrls.join(", ")}`);

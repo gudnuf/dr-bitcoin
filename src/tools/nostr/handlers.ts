@@ -17,7 +17,7 @@ export async function browseFeed(args: any) {
 		chalk.cyan("📡 Fetching hashtag feed:"),
 		chalk.gray(JSON.stringify(args, null, 2)),
 	);
-	const { hashtag, limit = 10, since = 0 } = args;
+	const { hashtag, limit = 10, since = 0, until = 0 } = args;
 
 	if (!hashtag) {
 		return {
@@ -32,6 +32,8 @@ export async function browseFeed(args: any) {
 		kinds: [1], // Text notes
 		limit: Number(limit),
 		"#t": [hashtag],
+        since,
+        until
 	};
 
 	if (since > 0) {

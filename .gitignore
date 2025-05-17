@@ -44,3 +44,4 @@ agent-memory.json
 .herme-keys.json
 .herme-responded-events.json
 .herme-responded-zaps.json
+.herme-responded-hashtags.json
