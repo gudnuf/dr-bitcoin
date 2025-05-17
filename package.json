@@ -16,7 +16,7 @@
 	},
 	"dependencies": {
 		"@ai-sdk/openai": "^1.3.22",
-		"@buildonspark/spark-sdk": "^0.1.20",
+		"@buildonspark/spark-sdk": "^0.1.16",
 		"@voltagent/core": "^0.1.19",
 		"@voltagent/vercel-ai": "^0.1.8",
 		"bip39": "^3.1.0",

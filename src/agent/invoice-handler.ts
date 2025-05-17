@@ -1,7 +1,7 @@
 import readline from "readline";
 import chalk from "chalk";
 import { SparkWallet } from "@buildonspark/spark-sdk";
-import bip39 from "bip39"
+import bip39 from "bip39";
 import "dotenv/config";
 
 export interface IInvoiceHandler {
@@ -11,11 +11,9 @@ export interface IInvoiceHandler {
 type WalletType = Awaited<ReturnType<typeof SparkWallet.initialize>>["wallet"];
 
 export class ConsoleInvoiceHandler implements IInvoiceHandler {
-  private rl: readline.Interface;
   private mnemonic: string;
 
-  constructor(rl: readline.Interface) {
-    this.rl = rl;
+  constructor() {
 
     const envMnemonic = process.env.MNEMONIC;
     if (!envMnemonic) {
@@ -29,8 +27,6 @@ export class ConsoleInvoiceHandler implements IInvoiceHandler {
 
     console.log(chalk.yellow("Payment required:"));
     console.log(chalk.blue("Invoice:"), invoice);
-    
-    console.log("Invoice:", invoice);
 
    // Get the result from initializeWallet
     const result = await initializeWallet(this.mnemonic, "MAINNET");
@@ -54,18 +50,9 @@ export class ConsoleInvoiceHandler implements IInvoiceHandler {
       // Now, proceed to pay invoice (if necessary)
        payInvoice(activeWallet, invoice);
 
-      // Confirm payment
-      return await this.confirmPayment();
+    return true;
     }
 
-  }
-
-  private async promptUser(prompt: string): Promise<string> {
-    return new Promise<string>((resolve) => {
-      this.rl.question(prompt, (answer) => {
-        resolve(answer);
-      });
-    });
   }
 }
 
@@ -84,7 +71,7 @@ export async function initializeWallet(
 
   try {
     const { wallet } = await SparkWallet.initialize({
-      mnemonicOrSeed: hexString,
+      mnemonicOrSeed:  mnemonic,
       options: { network },
     });
     console.log("Wallet Mnemomic initialized...");

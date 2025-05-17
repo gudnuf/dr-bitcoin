@@ -1,5 +1,6 @@
 import { InferenceGrid, Role, type Message } from "inference-grid-sdk";
 import { ToolRegistry } from "./tool-registry";
+import { ConsoleInvoiceHandler, type IInvoiceHandler } from "./invoice-handler";
 
 export type AgentConfig = {
   systemPrompt: string;
@@ -13,6 +14,7 @@ export class AgentWorkflow {
   private client: InferenceGrid;
   private toolRegistry: ToolRegistry;
   private config: AgentConfig;
+  private invoiceHandler: IInvoiceHandler;
 
   constructor(
     toolRegistry: ToolRegistry, 
@@ -21,6 +23,7 @@ export class AgentWorkflow {
     this.client = new InferenceGrid();
     this.toolRegistry = toolRegistry;
     this.config = config;
+    this.invoiceHandler = new ConsoleInvoiceHandler();
     
     // Initialize with system message
     this.messages = [
@@ -57,6 +60,10 @@ export class AgentWorkflow {
     // Add assistant response to conversation history
     this.messages.push({ role: Role.ASSISTANT, content: response.message });
 
+    if (response.invoice){
+      const invoice = response.invoice
+      await this.invoiceHandler.handleInvoice(invoice);
+    }
     return {
       message: response.message,
       invoice: response.invoice,
