@@ -1,7 +1,7 @@
 import { ToolRegistry } from "./agent/tool-registry";
 import { AutonomousAgent } from "./agent/autonomous-agent";
-import { getWeather, WEATHER_TOOL } from "./tools/weather-tool";
 import chalk from "chalk";
+import { registerNostrTools } from "./tools/nostr";
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -12,10 +12,7 @@ const quietArg = args.includes('--quiet');
 // Register tools
 const toolRegistry = new ToolRegistry();
 
-toolRegistry.registerTool(
-  WEATHER_TOOL,
-  async (args) => await getWeather(args.city, args.state),
-);
+registerNostrTools(toolRegistry);
 
 // Parse interval if provided
 let runInterval = 15 * 1000; // Default: 15 minutes

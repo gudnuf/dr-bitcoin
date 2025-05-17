@@ -13,6 +13,8 @@ export class ConsoleInvoiceHandler implements IInvoiceHandler {
   }
 
   public async handleInvoice(invoice: string): Promise<boolean> {
+    // console.log(chalk.bgGray("Not paying: "), invoice);
+    // return true;
     console.log(chalk.yellow("Payment required:"));
     console.log(chalk.blue("Invoice:"), invoice);
     

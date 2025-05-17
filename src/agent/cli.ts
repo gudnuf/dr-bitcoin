@@ -24,6 +24,14 @@ export class CLI {
     this.isRunning = true;
     
     try {
+      // Initialize agent and handle registration if needed
+      const registrationResult = await this.initializeAgent();
+      if (!registrationResult) {
+        console.log(chalk.red("Initialization failed. Exiting..."));
+        this.stop();
+        return;
+      }
+      
       await this.runConversationLoop();
     } catch (error: any) {
       console.error(chalk.red("Error in conversation:"), error);
@@ -34,6 +42,42 @@ export class CLI {
 
   public stop(): void {
     this.isRunning = false;
+  }
+
+  private async initializeAgent(): Promise<boolean> {
+    console.log(chalk.cyan("Initializing Dr. Bitcoin..."));
+    
+    // Initialize the agent and check registration status
+    const { isRegistered, invoice, needsPayment } = await this.agent.initialize();
+    
+    if (isRegistered) {
+      console.log(chalk.green("Client is registered and ready to use!"));
+      return true;
+    }
+    
+    if (needsPayment && invoice) {
+      console.log(chalk.yellow("Registration required. Please pay the invoice to proceed:"));
+      
+      const paymentConfirmed = await this.invoiceHandler.handleInvoice(invoice);
+      if (!paymentConfirmed) {
+        console.log(chalk.red("Registration cancelled: Payment not confirmed"));
+        return false;
+      }
+      
+      console.log(chalk.yellow("Confirming registration..."));
+      const registrationConfirmed = await this.agent.confirmRegistration();
+      
+      if (registrationConfirmed) {
+        console.log(chalk.green("Registration successful!"));
+        return true;
+      } else {
+        console.log(chalk.red("Registration confirmation failed."));
+        return false;
+      }
+    }
+    
+    console.log(chalk.red("Unable to register client."));
+    return false;
   }
 
   private async runConversationLoop(): Promise<void> {
@@ -67,6 +111,8 @@ export class CLI {
         console.log(chalk.green("Conversation has been reset."));
         continue;
       }
+
+      console.log('userInput', userInput);
 
       // Process user input
       const { message, invoice, needsPayment, toolCalls } = await this.agent.processUserInput(userInput);

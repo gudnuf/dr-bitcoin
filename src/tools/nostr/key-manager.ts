@@ -94,3 +94,11 @@ export function printKeyInfo(keyPair: KeyPair): void {
   console.log(`View profile: https://primal.net/p/${keyPair.npub}`);
   console.log("==============================\n");
 }
+
+export function getKeys() {
+  const keyPair = getOrGenerateKeyPair();
+  const privateKey = hexToUint8Array(keyPair.privateKeyHex);
+  const publicKey = keyPair.publicKeyHex;
+  const npub = keyPair.npub;
+  return { privateKey, publicKey, npub };
+}
