@@ -11,62 +11,37 @@ import {
 import { getKeys } from "./key-manager";
 import chalk from "chalk";
 
-// Function to browse feed
+// Function to browse feed based on hashtag
 export async function browseFeed(args: any) {
 	console.log(
-		chalk.cyan("📡 Fetching feed:"),
+		chalk.cyan("📡 Fetching hashtag feed:"),
 		chalk.gray(JSON.stringify(args, null, 2)),
 	);
-	const {
-		feed_type,
-		pubkey,
-		hashtag,
-		search_term,
-		limit = 10,
-		since = 0,
-	} = args;
+	const { hashtag, limit = 10, since = 0 } = args;
+
+	if (!hashtag) {
+		return {
+			success: false,
+			error: "hashtag is required for hashtag feed",
+		};
+	}
+
 	const nostrService = NostrService.getInstance();
 
 	let filter: Filter = {
 		kinds: [1], // Text notes
 		limit: Number(limit),
+		"#t": [hashtag],
 	};
 
 	if (since > 0) {
 		filter.since = Number(since);
 	}
 
-	// Adjust filter based on feed type
-	switch (feed_type) {
-		case "user":
-			if (!pubkey) {
-				return { success: false, error: "pubkey is required for user feed" };
-			}
-			const normalizedPubkey = normalizePubkey(pubkey);
-			filter.authors = [normalizedPubkey];
-			break;
-		case "hashtag":
-			if (!hashtag) {
-				return {
-					success: false,
-					error: "hashtag is required for hashtag feed",
-				};
-			}
-			filter["#t"] = [hashtag];
-			break;
-
-		case "global":
-		default:
-			// Global feed uses the default filter
-			break;
-	}
-
-	console.log(`📡 Fetching ${feed_type} feed...`);
+	console.log(`📡 Fetching hashtag #${hashtag} feed...`);
 
 	return new Promise((resolve) => {
 		const events: Event[] = [];
-		const profiles: Record<string, any> = {};
-		const pubkeys = new Set<string>();
 
 		const sub = nostrService.subscribe(filter, {
 			onevent: (event: Event) => {
@@ -75,68 +50,15 @@ export async function browseFeed(args: any) {
 					chalk.gray(JSON.stringify(event, null, 2)),
 				);
 				events.push(event);
-				pubkeys.add(event.pubkey);
 			},
 			eose: () => {
-				// After receiving events, fetch profiles for the authors
-				if (pubkeys.size > 0) {
-					const profilesSub = nostrService.subscribe(
-						{
-							kinds: [0],
-							authors: Array.from(pubkeys),
-						},
-						{
-							onevent: (event: Event) => {
-								try {
-									profiles[event.pubkey] = JSON.parse(event.content);
-								} catch (e) {
-									profiles[event.pubkey] = {};
-								}
-							},
-							eose: () => {
-								profilesSub.close();
-
-								// Format the results
-								const formattedPosts = events
-									.sort((a, b) => b.created_at - a.created_at)
-									.map((event) => formatPost(event, profiles[event.pubkey]));
-
-								resolve({
-									success: true,
-									feed_type,
-									posts: formattedPosts,
-									post_count: formattedPosts.length,
-								});
-							},
-						},
-					);
-
-					// Timeout for profiles fetch
-					setTimeout(() => {
-						profilesSub.close();
-
-						// Format the results with whatever profiles we have
-						const formattedPosts = events
-							.sort((a, b) => b.created_at - a.created_at)
-							.map((event) => formatPost(event, profiles[event.pubkey]));
-
-						resolve({
-							success: true,
-							feed_type,
-							posts: formattedPosts,
-							post_count: formattedPosts.length,
-						});
-					}, 5000);
-				} else {
-					resolve({
-						success: true,
-						feed_type,
-						posts: [],
-						post_count: 0,
-					});
-				}
-
 				sub.close();
+				resolve({
+					success: true,
+					hashtag,
+					events: events.sort((a, b) => b.created_at - a.created_at),
+					event_count: events.length,
+				});
 			},
 		});
 
@@ -147,22 +69,17 @@ export async function browseFeed(args: any) {
 			if (events.length === 0) {
 				resolve({
 					success: true,
-					feed_type,
-					posts: [],
-					post_count: 0,
-					message: "No posts found or timeout occurred",
+					hashtag,
+					events: [],
+					event_count: 0,
+					message: "No events found or timeout occurred",
 				});
 			} else {
-				// Format with whatever we have
-				const formattedPosts = events
-					.sort((a, b) => b.created_at - a.created_at)
-					.map((event) => formatPost(event, profiles[event.pubkey]));
-
 				resolve({
 					success: true,
-					feed_type,
-					posts: formattedPosts,
-					post_count: formattedPosts.length,
+					hashtag,
+					events: events.sort((a, b) => b.created_at - a.created_at),
+					event_count: events.length,
 					message: "Partial results due to timeout",
 				});
 			}
