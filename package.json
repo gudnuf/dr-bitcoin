@@ -20,6 +20,7 @@
 	"scripts": {
 		"lint": "biome lint .",
 		"format": "biome format . --write",
-		"check": "biome check ."
+		"check": "biome check .",
+		"agent": "bun run src/agent/main.ts"
 	}
 }
