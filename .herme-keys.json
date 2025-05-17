@@ -1,0 +1,10 @@
+{
+	"inferenceGrid": {
+		"privateKey": "",
+		"publicKey": ""
+	},
+	"nostr": {
+		"privateKey": "6175bd0b17c978d2dfdc97d874a66020074942a61b58cde5ce65baa5cdf198ba",
+		"publicKey": "fbaabb4b49fe7f1b9939235893671b423e3307081fca2f7d92e1f1d6c522cdda"
+	}
+}

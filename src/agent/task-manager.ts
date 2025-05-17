@@ -18,7 +18,7 @@ export class ToolRegistry {
 	}
 
 	getToolExecutor(name: string): ((args: any) => Promise<any>) | undefined {
-        console.log("Getting tool executor for", name);
+		console.log("Getting tool executor for", name);
 		return this.toolMap.get(name);
 	}
 }

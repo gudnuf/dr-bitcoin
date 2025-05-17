@@ -5,97 +5,101 @@ import chalk from "chalk";
 import boxen from "boxen";
 
 export class CLI {
-  private rl: readline.Interface;
-  private agent: AgentWorkflow;
-  private invoiceHandler: IInvoiceHandler;
-  private isRunning: boolean = false;
+	private rl: readline.Interface;
+	private agent: AgentWorkflow;
+	private invoiceHandler: IInvoiceHandler;
+	private isRunning: boolean = false;
 
-  constructor(agent: AgentWorkflow) {
-    this.rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
+	constructor(agent: AgentWorkflow) {
+		this.rl = readline.createInterface({
+			input: process.stdin,
+			output: process.stdout,
+		});
 
-    this.agent = agent;
-    this.invoiceHandler = new ConsoleInvoiceHandler(this.rl);
-  }
+		this.agent = agent;
+		this.invoiceHandler = new ConsoleInvoiceHandler(this.rl);
+	}
 
-  public async start(): Promise<void> {
-    this.isRunning = true;
-    
-    try {
-      await this.runConversationLoop();
-    } catch (error: any) {
-      console.error(chalk.red("Error in conversation:"), error);
-    } finally {
-      this.rl.close();
-    }
-  }
+	public async start(): Promise<void> {
+		this.isRunning = true;
 
-  public stop(): void {
-    this.isRunning = false;
-  }
+		try {
+			await this.runConversationLoop();
+		} catch (error: any) {
+			console.error(chalk.red("Error in conversation:"), error);
+		} finally {
+			this.rl.close();
+		}
+	}
 
-  private async runConversationLoop(): Promise<void> {
-    const welcomeMessage = boxen(
-      chalk.cyan("Dr. Bitcoin is ready to help!") + "\n\n" +
-      chalk.yellow("Commands:") + "\n" +
-      chalk.green("• exit") + " - Quit the conversation\n" +
-      chalk.green("• reset") + " - Start over",
-      {
-        padding: 1,
-        margin: 1,
-        borderStyle: "round",
-        borderColor: "cyan"
-      }
-    );
-    console.log(welcomeMessage);
+	public stop(): void {
+		this.isRunning = false;
+	}
 
-    while (this.isRunning) {
-      const userInput = await this.promptUser(
-        chalk.cyan("Enter a command: ")
-      );
+	private async runConversationLoop(): Promise<void> {
+		const welcomeMessage = boxen(
+			chalk.cyan("Dr. Bitcoin is ready to help!") +
+				"\n\n" +
+				chalk.yellow("Commands:") +
+				"\n" +
+				chalk.green("• exit") +
+				" - Quit the conversation\n" +
+				chalk.green("• reset") +
+				" - Start over",
+			{
+				padding: 1,
+				margin: 1,
+				borderStyle: "round",
+				borderColor: "cyan",
+			},
+		);
+		console.log(welcomeMessage);
 
-      if (userInput.toLowerCase() === "exit") {
-        console.log(chalk.yellow("Conversation ended."));
-        this.stop();
-        break;
-      }
+		while (this.isRunning) {
+			const userInput = await this.promptUser(chalk.cyan("Enter a command: "));
 
-      if (userInput.toLowerCase() === "reset") {
-        this.agent.resetConversation();
-        console.log(chalk.green("Conversation has been reset."));
-        continue;
-      }
+			if (userInput.toLowerCase() === "exit") {
+				console.log(chalk.yellow("Conversation ended."));
+				this.stop();
+				break;
+			}
 
-      // Process user input
-      const { message, invoice, needsPayment, toolCalls } = await this.agent.processUserInput(userInput);
-      
-      console.log(chalk.blue("Response:"), message);
+			if (userInput.toLowerCase() === "reset") {
+				this.agent.resetConversation();
+				console.log(chalk.green("Conversation has been reset."));
+				continue;
+			}
 
-      // Handle payment if needed
-      if (needsPayment && invoice) {
-        const paymentConfirmed = await this.invoiceHandler.handleInvoice(invoice);
-        if (!paymentConfirmed) {
-          console.log(chalk.red("Operation cancelled: Payment not confirmed"));
-          continue;
-        }
-      }
+			// Process user input
+			const { message, invoice, needsPayment, toolCalls } =
+				await this.agent.processUserInput(userInput);
 
-      // Handle tool calls
-      if (toolCalls && toolCalls.length > 0) {
-        console.log(chalk.yellow("Executing tools..."));
-        const followUpMessage = await this.agent.handleToolCalls(toolCalls);
-        console.log(chalk.blue("Follow-up response:"), followUpMessage);
-      }
-    }
-  }
+			console.log(chalk.blue("Response:"), message);
 
-  private async promptUser(prompt: string): Promise<string> {
-    return new Promise<string>((resolve) => {
-      this.rl.question(prompt, (answer) => {
-        resolve(answer);
-      });
-    });
-  }
+			// Handle payment if needed
+			if (needsPayment && invoice) {
+				const paymentConfirmed =
+					await this.invoiceHandler.handleInvoice(invoice);
+				if (!paymentConfirmed) {
+					console.log(chalk.red("Operation cancelled: Payment not confirmed"));
+					continue;
+				}
+			}
+
+			// Handle tool calls
+			if (toolCalls && toolCalls.length > 0) {
+				console.log(chalk.yellow("Executing tools..."));
+				const followUpMessage = await this.agent.handleToolCalls(toolCalls);
+				console.log(chalk.blue("Follow-up response:"), followUpMessage);
+			}
+		}
+	}
+
+	private async promptUser(prompt: string): Promise<string> {
+		return new Promise<string>((resolve) => {
+			this.rl.question(prompt, (answer) => {
+				resolve(answer);
+			});
+		});
+	}
 }
