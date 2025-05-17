@@ -1,103 +1,40 @@
 import readline from "readline";
-import chalk from "chalk";
-import { SparkWallet } from "@buildonspark/spark-sdk";
-import bip39 from "bip39";
-import "dotenv/config";
-
-export interface IInvoiceHandler {
-  handleInvoice(invoice: string): Promise<boolean>;
-}
-
-type WalletType = Awaited<ReturnType<typeof SparkWallet.initialize>>["wallet"];
+import { IInvoiceHandler } from './IInvoiceHandler';  // Assuming you have this interface
 
 export class ConsoleInvoiceHandler implements IInvoiceHandler {
+  private rl: readline.Interface;
   private mnemonic: string;
 
-  constructor() {
-
-    const envMnemonic = process.env.MNEMONIC;
-    if (!envMnemonic) {
-      throw new Error("MNEMONIC is not set in the environment");
-    }
-  
-    this.mnemonic = envMnemonic;
+  constructor(rl: readline.Interface, mnemonic: string) {
+    this.rl = rl;
+    this.mnemonic = mnemonic;  // Using the mnemonic passed in, no SparkWallet
   }
 
   public async handleInvoice(invoice: string): Promise<boolean> {
+    console.log("Invoice:", invoice);
 
-    console.log(chalk.yellow("Payment required:"));
-    console.log(chalk.blue("Invoice:"), invoice);
+    // Call the functions you need for the payment system, assuming `payInvoice` and `paymentCheckSuccess` are defined elsewhere
+    const paymentResult = await this.payInvoice(invoice);
 
-   // Get the result from initializeWallet
-    const result = await initializeWallet(this.mnemonic, "MAINNET");
-
-    // Check if the result is undefined
-    if (!result) {
-      console.error("Wallet initialization failed.");
-      return false;
-    }
-
-    // Now that we've ensured result isn't undefined, destructure safely
-    const { wallet: activeWallet, balance } = result;
-
-    console.log("Wallet initialized successfully with balance:", balance);
-
-    // Ensuring the activeWallet exists before using it
-    if (!activeWallet) {
-      console.error("Wallet initialization failed.");
-      return false;
-    } else {
-      // Now, proceed to pay invoice (if necessary)
-       payInvoice(activeWallet, invoice);
-
-    return true;
-    }
-
+    // Confirm the payment status
+    return paymentResult;
   }
-}
 
-export async function initializeWallet(
-  mnemonic: string,
-  network: "MAINNET" | "TESTNET" | "REGTEST" = "MAINNET"
-): Promise<{ wallet: WalletType; balance: string } | undefined> {
-  console.log("Wallet initializing...");
-  if (!bip39.validateMnemonic(mnemonic)) {
-    console.log("Invalid mnemonic");
-    return;
+  // Function to handle the payment of the invoice
+  private async payInvoice(invoice: string): Promise<boolean> {
+    console.log(`Attempting to pay invoice: ${invoice}`);
+    // Implement the logic for paying an invoice here (you can replace this with actual logic like calling a payment gateway)
+    
+    // Simulating success
+    return true;  // Return true or false depending on the success of the payment
   }
-  console.log("Wallet Mnemomic assigned...");
-  const seed = bip39.mnemonicToSeedSync(mnemonic);
-  const hexString = seed.toString("hex");
 
-  try {
-    const { wallet } = await SparkWallet.initialize({
-      mnemonicOrSeed:  mnemonic,
-      options: { network },
+  // Function to check if payment was successful
+  private async paymentCheckSuccess(): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      this.rl.question("Has the invoice been paid? (yes/no): ", (answer) => {
+        resolve(answer.toLowerCase() === "yes");
+      });
     });
-    console.log("Wallet Mnemomic initialized...");
-    const balance = await wallet.getBalance();
-    console.log("Wallet initialized successfully:", mnemonic.split(" ")[0]);
-    console.log("Balance:", balance);
-
-    return {
-      wallet,
-      balance: balance.balance.toString(),
-    };
-  } catch (error) {
-    console.error("Error initializing wallet:", error);
   }
 }
-
-// ⚡ Pay Lightning Invoice Function
-export async function payInvoice(wallet: WalletType, lightningInvoice: string): Promise<void> {
-  try {
-    await wallet.payLightningInvoice({
-      invoice: lightningInvoice,
-      maxFeeSats: 1,
-    });
-  } catch (error) {
-    console.log("paymentFailed");
-    console.error(error);
-  }
-}
-
