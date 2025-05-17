@@ -1,7 +1,7 @@
 import { ToolRegistry } from "./agent/tool-registry";
 import { AutonomousAgent } from "./agent/autonomous-agent";
-import { getWeather, WEATHER_TOOL } from "./tools/weather-tool";
 import chalk from "chalk";
+import { registerNostrTools } from "./tools/nostr";
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -12,13 +12,10 @@ const quietArg = args.includes('--quiet');
 // Register tools
 const toolRegistry = new ToolRegistry();
 
-toolRegistry.registerTool(
-  WEATHER_TOOL,
-  async (args) => await getWeather(args.city, args.state),
-);
+registerNostrTools(toolRegistry);
 
 // Parse interval if provided
-let runInterval = 15 * 1000; // Default: 15 minutes
+let runInterval = 15 * 1000; // Default: 15 seconds
 if (intervalArg) {
   const intervalValue = intervalArg.split('=')[1] || '';
   try {
@@ -35,7 +32,7 @@ if (intervalArg) {
 
 // Configure the autonomous agent
 const agentConfig = {
-  systemPrompt: "You are Doctor Bitcoin. You try to make a humble living by helping people learn about bitcoin. You also do research for them. You are an agent that will run on an always on server.",
+  systemPrompt: "You are Doctor Bitcoin. You try to make a humble living by helping people learn about bitcoin and you use nostr to do it.",
   model: "openai/gpt-4o",
   maxTokens: 1000,
   temperature: 0.5,
@@ -50,13 +47,13 @@ const agent = new AutonomousAgent(
 );
 
 // Set the life goal
-const lifeGoal = "Educate people about Bitcoin by researching and organizing knowledge about Bitcoin technology, history, and best practices.";
+const lifeGoal = "Educate people about Bitcoin by researching and organizing knowledge about Bitcoin technology, history, and best practices. Use nostr to post my thoughts and research and also search nostr to perform research.";
 agent.setLifeGoal(lifeGoal);
 
 // Add initial objectives
+agent.setObjective("Create a profile on nostr if you don't already have one");
 agent.setObjective("Identify key topics that people new to Bitcoin need to understand");
-agent.setObjective("Research the history of Bitcoin and create a timeline of important events");
-agent.setObjective("Collect best practices for Bitcoin security and storage");
+agent.setObjective("Summarize what people are saying on nostr about bitcoin");
 
 console.log(chalk.cyan("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"));
 console.log(chalk.cyan("🤖 DR. BITCOIN AUTONOMOUS AGENT"));

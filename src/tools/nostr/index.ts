@@ -1,29 +1,49 @@
 import { ToolRegistry } from "../../agent/tool-registry";
 import {
-  PUBLISH_NOSTR_PROFILE_TOOL,
-  PUBLISH_NOSTR_NOTE_TOOL,
-  PUBLISH_RANDOM_VIBE_TOOL,
-  GENERATE_NOSTR_KEYS_TOOL,
+  MANAGE_NOSTR_PROFILE,
+  NOSTR_BROWSE_FEED,
+  NOSTR_VIEW_THREAD,
+  NOSTR_POST_NOTE,
+  NOSTR_REPLY,
+  NOSTR_GET_PROFILE,
+  manageNostrProfile,
+  nostrBrowseFeed,
+  nostrViewThread,
+  nostrPostNote,
+  nostrReply,
+  nostrGetProfile,
   publishNostrProfile,
   publishNostrNote,
-  publishRandomVibe,
   generateNostrKeys,
   cleanup
 } from "./main";
 
+export {
+  MANAGE_NOSTR_PROFILE,
+  NOSTR_BROWSE_FEED,
+  NOSTR_VIEW_THREAD,
+  NOSTR_POST_NOTE,
+  NOSTR_REPLY,
+  NOSTR_GET_PROFILE,
+  manageNostrProfile,
+  nostrBrowseFeed,
+  nostrViewThread,
+  nostrPostNote,
+  nostrReply,
+  nostrGetProfile,
+  publishNostrProfile,
+  publishNostrNote,
+  generateNostrKeys
+};
+
 export function registerNostrTools(registry: ToolRegistry): void {
-  registry.registerTool(PUBLISH_NOSTR_PROFILE_TOOL, publishNostrProfile);
-  registry.registerTool(PUBLISH_NOSTR_NOTE_TOOL, publishNostrNote);
-  registry.registerTool(PUBLISH_RANDOM_VIBE_TOOL, publishRandomVibe);
-  registry.registerTool(GENERATE_NOSTR_KEYS_TOOL, generateNostrKeys);
+  registry.registerTool(MANAGE_NOSTR_PROFILE, manageNostrProfile);
+  registry.registerTool(NOSTR_BROWSE_FEED, nostrBrowseFeed);
+  // registry.registerTool(NOSTR_VIEW_THREAD, nostrViewThread);
+  // registry.registerTool(NOSTR_POST_NOTE, nostrPostNote);
+  // registry.registerTool(NOSTR_REPLY, nostrReply);
+  // registry.registerTool(NOSTR_GET_PROFILE, nostrGetProfile);
 
   // Register cleanup for SIGINT handling
   process.on('SIGINT', cleanup);
 }
-
-export {
-  PUBLISH_NOSTR_PROFILE_TOOL,
-  PUBLISH_NOSTR_NOTE_TOOL,
-  PUBLISH_RANDOM_VIBE_TOOL,
-  GENERATE_NOSTR_KEYS_TOOL
-};
