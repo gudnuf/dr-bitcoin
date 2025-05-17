@@ -14,13 +14,18 @@
 		"@voltagent/core": "^0.1.19",
 		"boxen": "^8.0.1",
 		"chalk": "^5.4.1",
+		"dotenv": "^16.5.0",
 		"enquirer": "^2.4.1",
-		"inference-grid-sdk": "^0.0.8"
+		"inference-grid-sdk": "^0.0.8",
+		"nostr-tools": "^2.13.0",
+		"ws": "^8.18.2"
 	},
 	"scripts": {
 		"lint": "biome lint .",
 		"format": "biome format . --write",
 		"check": "biome check .",
-		"agent": "bun run src/agent/main.ts"
+		"agent": "bun run src/agent/main.ts",
+		"nostr-demo": "bun run src/demo-nostr-agent.ts",
+		"nostr-keys": "bun run src/tools/nostr/keys-cli.ts"
 	}
 }
