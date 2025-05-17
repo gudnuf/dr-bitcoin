@@ -5,13 +5,19 @@
 	"private": true,
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
-		"@types/bun": "latest"
+		"@types/bun": "latest",
+		"@types/node": "^22.15.18",
+		"@voltagent/cli": "^0.1.5",
+		"tsx": "^4.19.4",
+		"typescript": "^5.8.3"
 	},
 	"peerDependencies": {
 		"typescript": "^5"
 	},
 	"dependencies": {
+		"@ai-sdk/openai": "^1.3.22",
 		"@voltagent/core": "^0.1.19",
+		"@voltagent/vercel-ai": "^0.1.8",
 		"boxen": "^8.0.1",
 		"chalk": "^5.4.1",
 		"dotenv": "^16.5.0",
@@ -19,6 +25,7 @@
 		"inference-grid-sdk": "^0.0.8",
 		"nostr-tools": "^2.13.0",
 		"ws": "^8.18.2"
+		"zod": "^3.24.4"
 	},
 	"scripts": {
 		"lint": "biome lint .",
@@ -27,5 +34,13 @@
 		"agent": "bun run src/agent/main.ts",
 		"nostr-demo": "bun run src/demo-nostr-agent.ts",
 		"nostr-keys": "bun run src/tools/nostr/keys-cli.ts"
+		"autonomous": "bun run src/autonomous.ts",
+		"dev:agent": "bun run --watch src/agent/main.ts",
+		"dev:autonomous": "bun run --watch src/autonomous.ts",
+		"dev:file": "bun run --watch",
+		"build": "tsc",
+  "dev": "tsx watch --env-file=.env ./src",
+  "start": "node dist/index.js",
+  "volt": "volt"
 	}
 }

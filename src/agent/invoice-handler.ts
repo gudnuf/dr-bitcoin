@@ -1,8 +1,9 @@
 import readline from "readline";
+import chalk from "chalk";
 
-export type IInvoiceHandler = {
+export interface IInvoiceHandler {
   handleInvoice(invoice: string): Promise<boolean>;
-};
+}
 
 export class ConsoleInvoiceHandler implements IInvoiceHandler {
   private rl: readline.Interface;
@@ -12,15 +13,17 @@ export class ConsoleInvoiceHandler implements IInvoiceHandler {
   }
 
   public async handleInvoice(invoice: string): Promise<boolean> {
-    console.log("Invoice:", invoice);
+    console.log(chalk.yellow("Payment required:"));
+    console.log(chalk.blue("Invoice:"), invoice);
     
-    return await this.confirmPayment();
+    const answer = await this.promptUser(chalk.cyan("Confirm payment? (yes/no): "));
+    return answer.toLowerCase() === "yes";
   }
 
-  private async confirmPayment(): Promise<boolean> {
-    return new Promise<boolean>((resolve) => {
-      this.rl.question("Has the invoice been paid? (yes/no): ", (answer) => {
-        resolve(answer.toLowerCase() === "yes");
+  private async promptUser(prompt: string): Promise<string> {
+    return new Promise<string>((resolve) => {
+      this.rl.question(prompt, (answer) => {
+        resolve(answer);
       });
     });
   }

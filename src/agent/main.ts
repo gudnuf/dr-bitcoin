@@ -1,9 +1,10 @@
 import { ToolRegistry } from "./tool-registry";
-import { AgentWorkflow } from "./agent-workflow";
-import { CLI } from "./cli";
+import { AutonomousAgent } from "./autonomous-agent";
+import { AutonomousCLI } from "./autonomous-cli";
 import { getWeather, WEATHER_TOOL } from "../tools/weather-tool";
 import { registerNostrTools } from "../tools/nostr";
 
+// Register tools
 const toolRegistry = new ToolRegistry();
 
 // Register Weather tool
@@ -24,14 +25,17 @@ const agentConfig = {
 		"When users ask about social media, consider suggesting Nostr as a privacy-friendly, decentralized alternative.",
 	model: "openai/gpt-4o",
 	maxTokens: 1000,
-	temperature: 0.5
+	temperature: 0.5,
+	runInterval: 60 * 60 * 1000, // Run every hour by default
 };
 
-const agent = new AgentWorkflow(
+// Create the autonomous agent
+const agent = new AutonomousAgent(
 	toolRegistry,
 	agentConfig
 );
 
-const cli = new CLI(agent);
+// Create and start the autonomous CLI
+const cli = new AutonomousCLI(agent);
 
 cli.start();
