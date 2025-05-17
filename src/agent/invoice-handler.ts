@@ -1,11 +1,8 @@
 import readline from "readline";
-<<<<<<< Updated upstream
 import chalk from "chalk";
-=======
 import { SparkWallet } from "@buildonspark/spark-sdk";
-import bip39 from "bip39";
+import bip39 from "bip39"
 import "dotenv/config";
->>>>>>> Stashed changes
 
 export interface IInvoiceHandler {
   handleInvoice(invoice: string): Promise<boolean>;
@@ -29,13 +26,10 @@ export class ConsoleInvoiceHandler implements IInvoiceHandler {
   }
 
   public async handleInvoice(invoice: string): Promise<boolean> {
-<<<<<<< Updated upstream
+
     console.log(chalk.yellow("Payment required:"));
     console.log(chalk.blue("Invoice:"), invoice);
     
-    const answer = await this.promptUser(chalk.cyan("Confirm payment? (yes/no): "));
-    return answer.toLowerCase() === "yes";
-=======
     console.log("Invoice:", invoice);
 
    // Get the result from initializeWallet
@@ -64,7 +58,6 @@ export class ConsoleInvoiceHandler implements IInvoiceHandler {
       return await this.confirmPayment();
     }
 
->>>>>>> Stashed changes
   }
 
   private async promptUser(prompt: string): Promise<string> {
