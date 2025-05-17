@@ -1,40 +1,75 @@
-import readline from "readline";
-import { IInvoiceHandler } from './IInvoiceHandler';  // Assuming you have this interface
+import type { IInvoiceHandler } from './IInvoiceHandler';  // Assuming you have this interface
+import { nwc } from "@getalby/sdk";
+import * as dotenv from 'dotenv';
 
+// Load environment variables from the .env file
+dotenv.config();
+
+// Payment handling class
 export class ConsoleInvoiceHandler implements IInvoiceHandler {
-  private rl: readline.Interface;
-  private mnemonic: string;
 
-  constructor(rl: readline.Interface, mnemonic: string) {
-    this.rl = rl;
-    this.mnemonic = mnemonic;  // Using the mnemonic passed in, no SparkWallet
-  }
+  private nwcClient: nwc.NWCClient;
 
-  public async handleInvoice(invoice: string): Promise<boolean> {
-    console.log("Invoice:", invoice);
-
-    // Call the functions you need for the payment system, assuming `payInvoice` and `paymentCheckSuccess` are defined elsewhere
-    const paymentResult = await this.payInvoice(invoice);
-
-    // Confirm the payment status
-    return paymentResult;
-  }
-
-  // Function to handle the payment of the invoice
-  private async payInvoice(invoice: string): Promise<boolean> {
-    console.log(`Attempting to pay invoice: ${invoice}`);
-    // Implement the logic for paying an invoice here (you can replace this with actual logic like calling a payment gateway)
-    
-    // Simulating success
-    return true;  // Return true or false depending on the success of the payment
-  }
-
-  // Function to check if payment was successful
-  private async paymentCheckSuccess(): Promise<boolean> {
-    return new Promise<boolean>((resolve) => {
-      this.rl.question("Has the invoice been paid? (yes/no): ", (answer) => {
-        resolve(answer.toLowerCase() === "yes");
-      });
+  constructor() {
+    // Initialize NWCClient with the NWC URL
+    this.nwcClient = new nwc.NWCClient({
+      nostrWalletConnectUrl: loadNWCUrl(),
     });
   }
+
+  // Function to handle the invoice payment
+  public async handleInvoice(invoice: string): Promise<boolean> {
+    try {
+      const response = await this.nwcClient.payInvoice({ invoice });
+
+      // Check the response for success criteria (you might need to check for a specific field)
+      if (response) {
+        console.log("Payment successful, response:", response);
+        return true;
+      } else {
+        console.error("Payment failed.", response);
+        return false;
+      }
+    } catch (error) {
+      console.error("Error paying invoice:", error);
+      return false;
+    }
+}
+
+  // Function to pay the invoice using NWCClient
+  private async payInvoice(invoice: string): Promise<boolean> {
+    try {
+      const response = await this.nwcClient.payInvoice({ invoice });
+
+      // Check the response for a successful payment
+      if (response) {
+        console.log("Payment successful!");
+        return true;
+      } else {
+        console.error("Payment failed.", response);
+        return false;
+      }
+    } catch (error) {
+      console.error("Error paying invoice:", error);
+      return false;
+    }
+  }
+
+  // Optional: A function to check payment success (you can customize this as per your needs)
+  private async paymentCheckSuccess(): Promise<boolean> {
+    // Placeholder function for additional checks
+    return true; // Here, just return true to indicate success
+  }
+}
+
+// Utility function to load NWC URL from environment variables
+function loadNWCUrl(): string {
+  // Return NWC_URL from process.env
+  const url = process.env.NWC_URL;
+
+  if (!url) {
+    throw new Error('NWC_URL is not set in the environment');
+  }
+
+  return url;
 }
