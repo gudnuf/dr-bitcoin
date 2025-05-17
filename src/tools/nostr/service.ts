@@ -1,5 +1,5 @@
 import { SimplePool } from "nostr-tools/pool";
-import type { Event } from "nostr-tools";
+import type { Event, Filter } from "nostr-tools";
 
 export class NostrService {
     private static instance: NostrService;
@@ -34,7 +34,7 @@ export class NostrService {
       return this.relayUrls;
     }
     
-    public async getEvent(filter: any): Promise<Event | null> {
+    public async getEvent(filter: Filter): Promise<Event | null> {
       try {
         return await this.pool.get(this.relayUrls, filter);
       } catch (error) {
@@ -43,11 +43,27 @@ export class NostrService {
       }
     }
     
-    public subscribe(filter: any, handlers: any): { close: () => void } {
-      return this.pool.subscribe(this.relayUrls, filter, handlers);
+    public subscribe(filter: Filter, handlers: {
+      onevent?: (event: Event) => void;
+      event?: (event: Event) => void;
+      eose?: () => void;
+    }): { close: () => void } {
+      // Normalize handlers to match nostr-tools expected format
+      const normalizedHandlers: any = {
+        eose: handlers.eose
+      };
+
+      // Support both onevent and event handler patterns
+      if (handlers.onevent) {
+        normalizedHandlers.onevent = handlers.onevent;
+      } else if (handlers.event) {
+        normalizedHandlers.onevent = handlers.event;
+      }
+
+      return this.pool.subscribe(this.relayUrls, filter, normalizedHandlers);
     }
     
-    public async publishEvent(event: any): Promise<string[]> {
+    public async publishEvent(event: Event): Promise<string[]> {
       try {
         const pubs = this.pool.publish(this.relayUrls, event);
         return await Promise.allSettled(pubs) as any;

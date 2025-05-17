@@ -48,11 +48,8 @@ export class AutonomousAgent extends AgentWorkflow {
     this.isRunning = true;
     this.cycleCount = 0;
     
-    // Schedule sequential agent cycles - each cycle runs after previous one completes
-    this.scheduleNextCycle();
-    
     // Schedule status updates (every 5 minutes or at half the cycle interval, whichever is shorter)
-    const statusInterval = Math.min(5 * 60 * 1000, Math.floor(this.agentConfig.runInterval / 2));
+    const statusInterval = Math.min(5 * 60 * 1000, Math.floor(this.agentConfig.runInterval *2));
     this.statusIntervalId = setInterval(() => this.printStatusSummary(), statusInterval);
     
     this.log(`${chalk.green('Autonomous agent started')} with life goal: ${chalk.yellow(lifeGoal)}`);
@@ -60,6 +57,9 @@ export class AutonomousAgent extends AgentWorkflow {
     
     // Print initial status
     this.printStatusSummary();
+    
+    // Run the first cycle immediately instead of waiting for the first interval
+    this.runCycle();
   }
 
   public stop(): void {

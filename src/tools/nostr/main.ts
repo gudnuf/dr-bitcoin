@@ -12,6 +12,7 @@ import {
 } from "./handlers";
 import { createProfileEvent, publishEvent, publishNote } from "./events";
 import { generateAndSaveKeyPair, printKeyInfo, getKeys } from "./key-manager";
+import chalk from "chalk";
 
 // Load environment variables
 dotenv.config();
@@ -67,10 +68,6 @@ export const NOSTR_BROWSE_FEED: Tool = {
         hashtag: {
           type: "string",
           description: "Hashtag to filter by (required for 'hashtag' feed type, without the # symbol)"
-        },
-        search_term: {
-          type: "string",
-          description: "Term to search for (required for 'search' feed type)"
         },
         limit: {
           type: "integer",
@@ -197,22 +194,28 @@ export const NOSTR_GET_PROFILE: Tool = {
 
 // Legacy function for backward compatibility
 export async function publishNostrProfile(args: any) {
+  console.log(chalk.cyan('📝 Publishing Nostr Profile:'), chalk.gray(JSON.stringify(args, null, 2)));
+    
   // Add default operation for backward compatibility
   const updatedArgs = { ...args, operation: "update" };
   return manageNostrProfile(updatedArgs);
 }
 
 export async function publishNostrEvent(args: any) {
+  console.log(chalk.cyan('📤 Publishing Nostr Event:'), chalk.gray(JSON.stringify(args, null, 2)));
   const { kind, content, tags = [], relays } = args;
   return await publishEvent(kind, content, tags, relays);
 }
 
 export async function publishNostrNote(args: any) {
+  console.log(chalk.cyan('📝 Publishing Nostr Note:'), chalk.gray(JSON.stringify(args, null, 2)));
   const { content, tags = [] } = args;
   return await publishNote(content, tags);
 }
 
 export async function generateNostrKeys() {
+  console.log(chalk.cyan('🔑 Generating new Nostr keys...'));
+  
   // Generate new keys
   const keyPair = generateAndSaveKeyPair();
 

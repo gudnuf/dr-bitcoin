@@ -1,4 +1,5 @@
-import { generateSecretKey, getPublicKey, nip19 } from "nostr-tools";
+import { generateSecretKey, getPublicKey } from "nostr-tools/pure";
+import { nip19 } from "nostr-tools";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";

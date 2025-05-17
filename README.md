@@ -1,3 +1,61 @@
+# Dr. Bitcoin Chat CLI
+
+A simple chat CLI application that uses the Inference Grid to interact with an LLM and process payments through Lightning Network invoices.
+
+## Features
+
+- Chat with an AI assistant specialized in Bitcoin and cryptocurrency
+- Autonomous agent capabilities for more complex interactions
+- Payment handling through Lightning Network invoices
+- Real-time streaming of AI responses
+
+## Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Build the project:
+
+```bash
+npm run build
+```
+
+3. Run the application:
+
+```bash
+npm start
+```
+
+## Usage
+
+Once running, you can interact with Dr. Bitcoin by typing messages. The following commands are also available:
+
+- `exit` - Quit the conversation
+- `reset` - Start over with a new conversation
+- `status` - View the agent's current status
+
+## Configuration
+
+You can configure the application by modifying the config object in `src/index.ts`:
+
+```typescript
+const chatCli = new ChatCLI(toolRegistry, {
+  privateKey: "your-private-key", // Your Inference Grid private key
+  modelId: 'openai/gpt-4o',      // The model to use
+  systemPrompt: "Custom system prompt", // Custom instructions for the AI
+  maxTokens: 1000,               // Maximum tokens in the response
+  temperature: 0.7,              // Response randomness (0-1)
+  verbose: false                 // Enable verbose logging
+});
+```
+
+## License
+
+MIT
+
 # Dr. Bitcoin Autonomous Agent
 
 An autonomous agent with a life goal that runs on intervals to continue making progress towards achieving its goal.

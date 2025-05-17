@@ -1,21 +1,24 @@
-import { nip19, type Event } from 'nostr-tools';
+import { nip19 } from 'nostr-tools';
+import type { Event, Filter } from 'nostr-tools';
 import { NostrService } from './service';
 import { formatPost, normalizeId, normalizePubkey } from './utils';
 import { createProfileEvent, fetchProfile, publishEvent, publishNote } from './events';
 import { getKeys } from './key-manager';
+import chalk from 'chalk';
 
 // Function to browse feed
 export async function browseFeed(args: any) {
+  console.log(chalk.cyan('📡 Fetching feed:'), chalk.gray(JSON.stringify(args, null, 2)));
   const { feed_type, pubkey, hashtag, search_term, limit = 10, since = 0 } = args;
   const nostrService = NostrService.getInstance();
   
-  let filter: any = {
+  let filter: Filter = {
     kinds: [1], // Text notes
-    limit: limit,
+    limit: Number(limit),
   };
   
   if (since > 0) {
-    filter.since = since;
+    filter.since = Number(since);
   }
   
   // Adjust filter based on feed type
@@ -33,13 +36,7 @@ export async function browseFeed(args: any) {
       }
       filter['#t'] = [hashtag];
       break;
-    case 'search':
-      if (!search_term) {
-        return { success: false, error: "search_term is required for search feed" };
-      }
-      // Simple content matching (note: not all relays support this well)
-      filter.search = search_term;
-      break;
+   
     case 'global':
     default:
       // Global feed uses the default filter
@@ -56,7 +53,8 @@ export async function browseFeed(args: any) {
     const sub = nostrService.subscribe(
       filter,
       {
-        event: (event: Event) => {
+        onevent: (event: Event) => {
+          console.log(chalk.cyan('📡 Received event:'), chalk.gray(JSON.stringify(event, null, 2)));
           events.push(event);
           pubkeys.add(event.pubkey);
         },
@@ -69,7 +67,7 @@ export async function browseFeed(args: any) {
                 authors: Array.from(pubkeys)
               },
               {
-                event: (event: Event) => {
+                onevent: (event: Event) => {
                   try {
                     profiles[event.pubkey] = JSON.parse(event.content);
                   } catch (e) {
@@ -156,6 +154,7 @@ export async function browseFeed(args: any) {
 
 // Function to view a complete thread
 export async function viewThread(args: any) {
+  console.log(chalk.cyan('📡 Fetching thread:'), chalk.gray(JSON.stringify(args, null, 2)));
   const { note_id, limit = 20 } = args;
   const nostrService = NostrService.getInstance();
   
@@ -187,7 +186,8 @@ export async function viewThread(args: any) {
         limit: limit
       },
       {
-        event: (event: Event) => {
+        onevent: (event: Event) => {
+          console.log(chalk.cyan('📡 Received event:'), chalk.gray(JSON.stringify(event, null, 2)));
           events.push(event);
           pubkeys.add(event.pubkey);
         },
@@ -200,7 +200,7 @@ export async function viewThread(args: any) {
                 authors: Array.from(pubkeys)
               },
               {
-                event: (event: Event) => {
+                onevent: (event: Event) => {
                   try {
                     profiles[event.pubkey] = JSON.parse(event.content);
                   } catch (e) {
@@ -284,6 +284,7 @@ export async function viewThread(args: any) {
 
 // Function to post a new note
 export async function postNote(args: any) {
+  console.log(chalk.cyan('📝 Creating new note:'), chalk.gray(JSON.stringify(args, null, 2)));
   const { content, mentions = [], hashtags = [], geohash } = args;
   
   if (!content) {

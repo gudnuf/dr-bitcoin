@@ -1,5 +1,6 @@
 import { finalizeEvent } from 'nostr-tools/pure';
-import { nip19, type Event } from 'nostr-tools';
+import { nip19 } from 'nostr-tools';
+import type { Event } from 'nostr-tools';
 import { getKeys } from './key-manager';
 import { NostrService } from './service';
 
@@ -102,7 +103,7 @@ export async function fetchProfile(publicKey: string) {
         limit: 1
       },
       {
-        event: (event: Event) => {
+        onevent: (event: Event) => {
           try {
             const content = event.content || '{}';
             profileData = JSON.parse(content);
