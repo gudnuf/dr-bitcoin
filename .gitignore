@@ -41,3 +41,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 dr-bitcoin-keys.json
 .nostr-keys
 agent-memory.json
+.herme-keys.json
+.herme-responded-events.json
+.herme-responded-zaps.json
