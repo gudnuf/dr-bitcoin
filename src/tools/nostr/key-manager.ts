@@ -1,4 +1,5 @@
-import { generateSecretKey, getPublicKey, nip19 } from "nostr-tools";
+import { generateSecretKey, getPublicKey } from "nostr-tools/pure";
+import { nip19 } from "nostr-tools";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
@@ -93,4 +94,12 @@ export function printKeyInfo(keyPair: KeyPair): void {
   console.log(`Created: ${keyPair.createdAt}`);
   console.log(`View profile: https://primal.net/p/${keyPair.npub}`);
   console.log("==============================\n");
+}
+
+export function getKeys() {
+  const keyPair = getOrGenerateKeyPair();
+  const privateKey = hexToUint8Array(keyPair.privateKeyHex);
+  const publicKey = keyPair.publicKeyHex;
+  const npub = keyPair.npub;
+  return { privateKey, publicKey, npub };
 }
