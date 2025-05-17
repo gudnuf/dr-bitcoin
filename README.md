@@ -2,6 +2,9 @@
 
 ## Setup
 
+### With Nix (ideal)
+> or you can just [install bun](https://bun.sh/docs/installation) directly.
+
 Install nix with. Reccommended to use Dereminate systems installer: https://determinate.systems/posts/determinate-nix-installer/
 
 You can just run this command from derterminate systems:
@@ -15,3 +18,4 @@ Or just enter this directory and run:
 ```bash
 nix develop
 ```
+
