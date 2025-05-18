@@ -60,23 +60,29 @@ class Logger {
 	}
 
 	static box(title: string, message: string, type: 'info' | 'success' | 'warn' | 'error' = 'info') {
+		// Only use boxes for truly important messages
 		const colors = {
 			info: chalk.cyan,
 			success: chalk.green,
 			warn: chalk.yellow,
 			error: chalk.red
 		};
-		
+
 		console.log(boxen(colors[type](message), {
 			title: colors[type](title),
 			titleAlignment: 'center',
 			padding: 1,
-			margin: 1,
+			margin: 0, // Reduced margin
 			borderStyle: 'round',
-			borderColor: type === 'info' ? 'cyan' : 
-			             type === 'success' ? 'green' : 
+			borderColor: type === 'info' ? 'cyan' :
+			             type === 'success' ? 'green' :
 			             type === 'warn' ? 'yellow' : 'red'
 		}));
+	}
+
+	static highlight(title: string, message: string) {
+		// A more compact way to highlight information without a full box
+		console.log(`${chalk.magenta(`[${title}]`)} ${message}`);
 	}
 
 	static debug(obj: any, title?: string) {
@@ -293,7 +299,7 @@ class Herme {
 	private async registerAndPay(): Promise<void> {
 		const { invoice, publicKey, privateKey } =
 			await InferenceGrid.registerClient();
-		
+
 		Logger.box("REGISTRATION REQUIRED", `Please pay this invoice to register:\n${invoice}`, 'info');
 
 		if (invoice) {
@@ -312,7 +318,7 @@ class Herme {
 	private enqueuePayment(invoice: string): void {
 		Logger.info(`Payment queued: ${invoice.substring(0, 20)}...`);
 		this.paymentQueue.push(invoice);
-		
+
 		// Start processing the queue if it's not already running
 		if (!this.isProcessingPayments) {
 			this.processPaymentQueue();
@@ -321,9 +327,9 @@ class Herme {
 
 	private async processPaymentQueue(): Promise<void> {
 		if (this.isProcessingPayments) return;
-		
+
 		this.isProcessingPayments = true;
-		
+
 		try {
 			while (this.paymentQueue.length > 0) {
 				const invoice = this.paymentQueue.shift();
@@ -346,7 +352,7 @@ class Herme {
 		const nostrKeys = this.keyManager.getNostrKeys();
 		const npub = nip19.npubEncode(nostrKeys.publicKey);
 		Logger.info(`Fetching profile for ${chalk.bold(npub)}`);
-		
+
 		return new Promise<any>((resolve) => {
 			let profileData:
 				| {
@@ -454,7 +460,7 @@ class Herme {
 			};
 
 			const signedEvent = finalizeEvent(eventTemplate, nostrKeys.privateKey);
-			
+
 			const res = await this.nostrService.publishEvent(signedEvent);
 			Logger.success("Profile published successfully!");
 		} catch (error) {
@@ -462,7 +468,7 @@ class Herme {
 			throw error; // Re-throw to allow higher-level error handling
 		}
 	}
-    
+
 	private async publishDeepThoughts(): Promise<void> {
 		const nostrKeys = this.keyManager.getNostrKeys();
 
@@ -502,7 +508,7 @@ class Herme {
 	private async subscribeToReplies(): Promise<void> {
 		const nostrKeys = this.keyManager.getNostrKeys();
 		const npub = nip19.npubEncode(nostrKeys.publicKey);
-		Logger.box("NOSTR REPLY MONITORING", `Activating reply surveillance for:\n${chalk.bold(npub)}`, 'info');
+		Logger.highlight("REPLIES", `Monitoring for replies to ${chalk.bold(npub)}`);
 
 		// Track event IDs that we've already responded to - persist to disk
 		const RESPONDED_EVENTS_FILE = path.join(
@@ -518,7 +524,7 @@ class Herme {
 					fs.readFileSync(RESPONDED_EVENTS_FILE, "utf-8"),
 				) as string[];
 				respondedEvents = new Set(savedEvents);
-				Logger.info(`Loaded ${chalk.bold(respondedEvents.size)} previously responded events`);
+				Logger.info(`Loaded ${respondedEvents.size} previously responded events`);
 			}
 		} catch (error) {
 			Logger.error("Error loading responded events:", error);
@@ -571,23 +577,28 @@ class Herme {
 						if (!isReplyToUs) {
 							return;
 						}
-						
-						Logger.box("NEW REPLY", `Received incoming message:\n${chalk.italic(event.content.substring(0, 120))}${event.content.length > 120 ? '...' : ''}`, 'info');
-						
+
+						// Get a shortened preview of the content
+						const contentPreview = event.content.length > 80
+							? `${event.content.substring(0, 80)}...`
+							: event.content;
+
+						Logger.highlight("REPLY", `New reply: ${chalk.italic(contentPreview)}`);
+
 						// Generate a response using the chat function
 						const replyContent = event.content;
 						const prompt = `You are Herme, a Bitcoin professor and entrepreneur responding to: "${replyContent}"
-                            
+
                             Write a tweet-length (max 280 chars) response that:
                             1. Teaches something valuable about Bitcoin that relates to their question/comment
                             2. Is approachable and educational with a clear explanation
                             3. Demonstrates your expertise to help grow your following
                             4. Subtly encourages engagement and zaps (tips) for your educational content
-                            
+
                             Your goal is to be the most helpful Bitcoin educator on Nostr while building your brand and earning zaps.
                             Use plain text only, no formatting.`;
 
-						Logger.info("Generating thoughtful response...");
+						Logger.info("Generating response...");
 						const { message } = await this.chat({
 							messages: [{ role: Role.USER, content: prompt }],
 							useSystemPrompt: true
@@ -648,9 +659,8 @@ class Herme {
 								responseEvent,
 								nostrKeys.privateKey,
 							);
-							const res =
-								await this.nostrService.publishEvent(signedResponseEvent);
-							Logger.success("Response published successfully");
+							await this.nostrService.publishEvent(signedResponseEvent);
+							Logger.success("Response published");
 
 							// Mark this event as responded to
 							respondedEvents.add(event.id);
@@ -664,18 +674,18 @@ class Herme {
 					}
 				},
 				eose: () => {
-					Logger.info("End of stored events, now listening for new replies in real-time");
+					Logger.info("Now monitoring for new replies in real-time");
 				},
 			},
 		);
 
-		Logger.success("Reply monitoring system active and ready");
+		Logger.success("Reply monitoring active");
 	}
 
 	private async subscribeToZaps(): Promise<void> {
 		const nostrKeys = this.keyManager.getNostrKeys();
 		const npub = nip19.npubEncode(nostrKeys.publicKey);
-		Logger.box("ZAP MONITORING", `Activating zap detection for:\n${chalk.bold(npub)}`, 'info');
+		Logger.highlight("ZAPS", `Monitoring for zaps to ${chalk.bold(npub)}`);
 
 		// Track event IDs that we've already responded to - persist to disk
 		const RESPONDED_ZAPS_FILE = path.join(
@@ -691,7 +701,7 @@ class Herme {
 					fs.readFileSync(RESPONDED_ZAPS_FILE, "utf-8"),
 				) as string[];
 				respondedZaps = new Set(savedEvents);
-				Logger.info(`Loaded ${chalk.bold(respondedZaps.size)} previously responded zaps`);
+				Logger.info(`Loaded ${respondedZaps.size} previously responded zaps`);
 			}
 		} catch (error) {
 			Logger.error("Error loading responded zaps:", error);
@@ -727,19 +737,19 @@ class Herme {
 						const senderTag = event.tags.find(
 							(tag) => tag[0] === "P" && tag.length > 1,
 						);
-						
+
 						if (!senderTag || !senderTag[1]) {
 							Logger.warn("No valid sender pubkey found in zap receipt");
 							return;
 						}
-						
+
 						const senderPubkey = senderTag[1];
-						
+
 						// Extract the payment amount from the bolt11 invoice
 						const bolt11Tag = event.tags.find(
 							(tag) => tag[0] === "bolt11" && tag.length > 1,
 						);
-						
+
 						let amountSats = "unknown amount";
 						if (bolt11Tag && bolt11Tag[1]) {
 							// For a real implementation, parse the bolt11 to get the amount
@@ -747,7 +757,7 @@ class Herme {
 							amountSats = "some sats";
 						}
 
-						Logger.box("ZAP RECEIVED", `Lightning zap detected from user:\n${chalk.bold(nip19.npubEncode(senderPubkey))}`, 'success');
+						Logger.highlight("ZAP", `Received zap from ${chalk.bold(nip19.npubEncode(senderPubkey).substring(0, 10))}...`);
 
 						// Convert sender pubkey to npub for content mention
 						const senderNpub = nip19.npubEncode(senderPubkey);
@@ -760,7 +770,7 @@ class Herme {
                             2. Genuinely thanks them for supporting your Bitcoin education mission
                             3. Teaches one valuable Bitcoin concept they might not know
                             4. Subtly encourages further engagement with your content
-                            
+
                             Your goal is to provide exceptional value to supporters, helping them learn while also growing your following.
                             This is a key part of your entrepreneurial strategy - deliver extraordinary value to those who support you.
                             Use plain text only.`;
@@ -800,7 +810,7 @@ class Herme {
 							responseEvent,
 							nostrKeys.privateKey,
 						);
-						const res = await this.nostrService.publishEvent(signedResponseEvent);
+						await this.nostrService.publishEvent(signedResponseEvent);
 						Logger.success("Zap acknowledgment published");
 
 						// Mark this zap as responded to
@@ -811,17 +821,166 @@ class Herme {
 					}
 				},
 				eose: () => {
-					Logger.info("End of stored zap events, now listening for new zaps in real-time");
+					Logger.info("Now monitoring for new zaps in real-time");
 				},
 			},
 		);
 
-		Logger.success("Zap monitoring system active and ready");
+		Logger.success("Zap monitoring active");
+	}
+
+	private async subscribeToMentions(): Promise<void> {
+		const nostrKeys = this.keyManager.getNostrKeys();
+		const npub = nip19.npubEncode(nostrKeys.publicKey);
+		Logger.highlight("MENTIONS", `Monitoring for ${chalk.bold(npub)}`);
+
+		// Fetch the profile to get the current name
+		const profile = await this.fetchProfile() || { name: "Herme PhD" };
+		const profileName = profile.name || "Herme PhD";
+		Logger.info(`Also monitoring for name mentions: @${chalk.bold(profileName)}`);
+
+		// Track event IDs that we've already responded to - persist to disk
+		const RESPONDED_MENTIONS_FILE = path.join(
+			process.cwd(),
+			".herme-responded-mentions.json",
+		);
+		let respondedEvents = new Set<string>();
+
+		// Load previously responded events
+		try {
+			if (fs.existsSync(RESPONDED_MENTIONS_FILE)) {
+				const savedEvents = JSON.parse(
+					fs.readFileSync(RESPONDED_MENTIONS_FILE, "utf-8"),
+				) as string[];
+				respondedEvents = new Set(savedEvents);
+				Logger.info(`Loaded ${respondedEvents.size} previously responded mentions`);
+			}
+		} catch (error) {
+			Logger.error("Error loading responded mentions:", error);
+		}
+
+		// Function to persist responded events
+		const saveRespondedEvents = () => {
+			try {
+				fs.writeFileSync(
+					RESPONDED_MENTIONS_FILE,
+					JSON.stringify(Array.from(respondedEvents), null, 2),
+				);
+			} catch (error) {
+				Logger.error("Error saving responded mentions:", error);
+			}
+		};
+
+		// Subscribe to all text notes (kind 1)
+		this.nostrService.subscribe(
+			{
+				kinds: [1], // Text notes
+			},
+			{
+				onevent: async (event: Event) => {
+					try {
+						// Skip events from ourselves
+						if (event.pubkey === nostrKeys.publicKey) {
+							return;
+						}
+
+						// Skip events we've already responded to
+						if (respondedEvents.has(event.id)) {
+							return;
+						}
+
+						// Check if this event mentions us with nostr: or @npub format OR name
+						// Escape special regex characters in the profile name
+						const escapedName = profileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+						const mentionRegex = new RegExp(`(nostr:${npub}|@${npub}|@${escapedName})`, 'i');
+
+						if (!mentionRegex.test(event.content)) {
+							return;
+						}
+
+						// Get a shortened preview of the content
+						const contentPreview = event.content.length > 80
+							? `${event.content.substring(0, 80)}...`
+							: event.content;
+
+						Logger.highlight("MENTION", `New mention: ${chalk.italic(contentPreview)}`);
+
+						// Generate a response using the chat function
+						const mentionContent = event.content;
+						const prompt = `You are Herme, a Bitcoin professor and entrepreneur responding to a post that mentioned you: "${mentionContent}"
+
+                            Write a tweet-length (max 280 chars) response that:
+                            1. Addresses their mention specifically
+                            2. Teaches something valuable about Bitcoin that relates to their post
+                            3. Is approachable and educational with a clear explanation
+                            4. Demonstrates your expertise to help grow your following
+                            5. Subtly encourages engagement and zaps (tips) for your educational content
+
+                            Your goal is to be the most helpful Bitcoin educator on Nostr while building your brand and earning zaps.
+                            Use plain text only, no formatting.`;
+
+						Logger.info("Generating response to mention...");
+						const { message } = await this.chat({
+							messages: [{ role: Role.USER, content: prompt }],
+							useSystemPrompt: true
+						});
+
+						// Create tags for the response
+						const tags: string[][] = [
+							// Reference the original post
+							["e", event.id, "", "reply"],
+							// Tag the author
+							["p", event.pubkey]
+						];
+
+						// Get random hashtags
+						const selectedHashtags = this.getRandomHashtags(2);
+
+						// Add hashtag tags
+						selectedHashtags.forEach(tag => {
+							tags.push(["t", tag]);
+						});
+
+						// Format hashtags for content
+						const hashtagString = selectedHashtags.map(tag => `#${tag}`).join(' ');
+						const contentWithHashtags = `${message}\n\n${hashtagString}`;
+
+						// Create and publish the response event
+						const responseEvent = {
+							kind: 1, // Text note
+							created_at: Math.floor(Date.now() / 1000),
+							tags,
+							content: contentWithHashtags,
+							pubkey: nostrKeys.publicKey,
+						};
+
+						const signedResponseEvent = finalizeEvent(
+							responseEvent,
+							nostrKeys.privateKey,
+						);
+						await this.nostrService.publishEvent(signedResponseEvent);
+						Logger.success("Response to mention published");
+
+						// Mark this event as responded to
+						respondedEvents.add(event.id);
+						saveRespondedEvents();
+
+					} catch (error) {
+						Logger.error("Error handling mention:", error);
+					}
+				},
+				eose: () => {
+					Logger.info("Now monitoring for new mentions in real-time");
+				},
+			},
+		);
+
+		Logger.success("Mention monitoring active");
 	}
 
 	private async monitorHashtags(): Promise<() => void> {
 		const nostrKeys = this.keyManager.getNostrKeys();
-		Logger.box("HASHTAG MONITOR", "Activating hashtag surveillance system", 'info');
+		Logger.highlight("HASHTAGS", "Monitoring trending hashtags");
 
 		// Track event IDs that we've already responded to
 		const RESPONDED_HASHTAGS_FILE = path.join(
@@ -837,7 +996,7 @@ class Herme {
 					fs.readFileSync(RESPONDED_HASHTAGS_FILE, "utf-8"),
 				) as string[];
 				respondedEvents = new Set(savedEvents);
-				Logger.info(`Loaded ${chalk.bold(respondedEvents.size)} previously responded hashtag events`);
+				Logger.info(`Loaded ${respondedEvents.size} previously responded hashtag events`);
 			}
 		} catch (error) {
 			Logger.error("Error loading responded hashtag events:", error);
@@ -863,7 +1022,7 @@ class Herme {
 			} catch (e) {
 				// Not valid JSON, continue to extraction methods
 			}
-			
+
 			// Try to extract JSON from markdown code blocks
 			const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
 			if (codeBlockMatch && codeBlockMatch[1]) {
@@ -873,7 +1032,7 @@ class Herme {
 					// Not valid JSON, continue
 				}
 			}
-			
+
 			// Try to find anything that looks like JSON objects
 			const jsonObjectMatch = text.match(/\{[\s\S]*\}/);
 			if (jsonObjectMatch) {
@@ -883,7 +1042,7 @@ class Herme {
 					// Not valid JSON, continue
 				}
 			}
-			
+
 			// If all parsing attempts fail, return null
 			return null;
 		};
@@ -892,18 +1051,18 @@ class Herme {
 		const findAndRespondToHashtagPosts = async () => {
 			const currentTime = Math.floor(Date.now() / 1000);
 			const oneWeekAgo = currentTime - (14 * 24 * 60 * 60); // 1 week in seconds
-			
+
 			// Generate random end time within last week
 			const randomEnd = Math.floor(Math.random() * (currentTime - oneWeekAgo)) + oneWeekAgo;
-			
+
 			// Randomly select three hashtags to check this cycle
 			const selectedHashtags = this.getRandomHashtags(3);
-				
-			Logger.info(`Scanning for hashtags: ${chalk.bold(selectedHashtags.join(', '))}`);
-			
+
+			Logger.info(`Scanning hashtags: ${selectedHashtags.join(', ')}`);
+
 			// Collect events for all selected hashtags
 			const allEvents: PostWithMetadata[] = [];
-			
+
 			// Get posts for each hashtag
 			for (const hashtag of selectedHashtags) {
 				try {
@@ -913,7 +1072,7 @@ class Herme {
 						limit: 3,
 						until: randomEnd
 					}) as BrowseFeedResponse;
-					
+
 					if (result && Array.isArray(result.events) && result.events.length > 0) {
 						// Process the events directly
 						for (const event of result.events) {
@@ -921,7 +1080,7 @@ class Herme {
 							if (respondedEvents.has(event.id)) {
 								continue;
 							}
-							
+
 							// Add to our collection
 							allEvents.push({
 								id: event.id,
@@ -936,7 +1095,7 @@ class Herme {
 					Logger.error(`Error fetching ${hashtag} posts:`, error);
 				}
 			}
-			
+
 			// If we found any new events, evaluate them
 			if (allEvents.length > 0) {
 				// Randomly decide whether to respond or create new content
@@ -945,7 +1104,7 @@ class Herme {
 				if (shouldRespond) {
 					// Only take first 3 events if we have more
 					const eventsToEvaluate = allEvents.slice(0, 3);
-					
+
 					try {
 						// Prepare the events for evaluation by the LLM
 						const eventsForEvaluation = eventsToEvaluate.map(event => {
@@ -955,30 +1114,30 @@ class Herme {
 								hashtag: event.hashtag
 							};
 						});
-						
+
 						// Create a prompt for the LLM to select the most interesting post
 						const selectionPrompt = `
 							You are Herme, a Bitcoin professor and educational entrepreneur monitoring the Nostr network.
 							Your mission is to teach people about Bitcoin, grow your following, and earn zaps through valuable educational content.
-							
+
 							Below is a list of recent posts with hashtags I'm monitoring.
 							Please analyze these posts and identify the SINGLE most interesting one to respond to.
-							
+
 							Focus on posts that:
 							1. Present opportunities to teach valuable Bitcoin concepts
 							2. Have high engagement potential (questions, misconceptions, or interesting topics)
 							3. Come from users who might zap (tip) valuable educational responses
 							4. Allow you to demonstrate your expertise in an accessible way
-							
+
 							Here are the recent posts:
 							${JSON.stringify(eventsForEvaluation, null, 2)}
-							
+
 							Select the most interesting post and provide:
 							1. The post ID
 							2. A brief explanation why this presents a teaching opportunity
 							3. The key Bitcoin concept you could teach in response
 							4. How responding might help grow your following or earn zaps
-							
+
 							IMPORTANT: You must respond with ONLY a JSON object in the following format:
 							{
 								"selectedPostId": "the-id-of-selected-post",
@@ -986,71 +1145,73 @@ class Herme {
 								"keyConceptToTeach": "bitcoin concept to explain",
 								"growthPotential": "how this helps your educational business"
 							}
-							
+
 							Do not include any other text, markdown formatting, or explanations outside the JSON object.
 						`;
-						
-						Logger.info("Evaluating posts for interestingness...");
-						
+
+						Logger.info("Evaluating posts for response potential...");
+
 						// Send to chat for evaluation
 						const { message } = await this.chat({
 							messages: [{ role: Role.USER, content: selectionPrompt }],
 							temperature: 0.7,
 							useSystemPrompt: true
 						});
-						
+
 						// Use our improved JSON extraction function
 						const jsonResponse = extractJsonFromResponse(message);
-						
+
 						if (!jsonResponse) {
-							Logger.error("Could not parse any valid JSON from response");
-							Logger.debug(message, "Raw response");
+							Logger.error("Could not parse valid JSON from response");
 							return;
 						}
-						
+
 						if (!jsonResponse.selectedPostId) {
 							Logger.error("JSON response missing required 'selectedPostId' field");
-							Logger.debug(jsonResponse, "Parsed JSON");
 							return;
 						}
-						
+
 						// Find the selected post
 						const selectedPost = allEvents.find(event => event.id === jsonResponse.selectedPostId);
-						
+
 						if (!selectedPost) {
 							Logger.warn("Selected post ID not found in results");
-							Logger.debug(jsonResponse, "Selection data");
 							return;
 						}
-						
-						Logger.box("INTERESTING POST", `Selected post with hashtag #${selectedPost.hashtag}:\n${chalk.italic(selectedPost.content.substring(0, 120))}${selectedPost.content.length > 120 ? '...' : ''}`, 'info');
-						
+
+						// Get a shortened preview of the content
+						const contentPreview = selectedPost.content.length > 80
+							? `${selectedPost.content.substring(0, 80)}...`
+							: selectedPost.content;
+
+						Logger.highlight("HASHTAG", `Responding to #${selectedPost.hashtag} post: ${chalk.italic(contentPreview)}`);
+
 						// Generate a response
 						const responsePrompt = `
 							You are Herme, a Bitcoin professor and educational entrepreneur responding to this post:
 							"${selectedPost.content}"
 							Tagged with: #${selectedPost.hashtag}
-							
+
 							Write a tweet-length (max 280 chars) response that:
 							1. Demonstrates that you understand their perspective
 							2. Teaches one valuable Bitcoin concept related to their post
 							3. Explains the concept in a clear, approachable way
 							4. Subtly encourages engagement and zaps (tips) for your teaching
-							
-							Remember: Your business model depends on providing exceptional educational value 
-							that grows your following and earns zaps. Each response is an opportunity to 
+
+							Remember: Your business model depends on providing exceptional educational value
+							that grows your following and earns zaps. Each response is an opportunity to
 							showcase your teaching ability and build your educational brand.
-							
+
 							Use plain text only, no formatting.
 						`;
-						
-						Logger.info("Generating thoughtful response...");
+
+						Logger.info("Generating response...");
 						const { message: responseContent } = await this.chat({
 							messages: [{ role: Role.USER, content: responsePrompt }],
 							temperature: 0.7,
 							useSystemPrompt: true
 						});
-						
+
 						// Create a reply
 						const tags: string[][] = [
 							// Reference the original post
@@ -1064,7 +1225,7 @@ class Herme {
 						// Get additional random hashtags (excluding the original hashtag)
 						const additionalHashtags = this.getRandomHashtags(2)
 							.filter(tag => tag !== selectedPost.hashtag);
-						
+
 						// Add additional hashtag tags
 						additionalHashtags.forEach(tag => {
 							tags.push(["t", tag]);
@@ -1075,7 +1236,7 @@ class Herme {
 							.map(tag => `#${tag}`)
 							.join(' ');
 						const contentWithHashtags = `${responseContent}\n\n${hashtagString}`;
-						
+
 						// Create and publish the response event
 						const responseEvent = {
 							kind: 1, // Text note
@@ -1084,18 +1245,18 @@ class Herme {
 							content: contentWithHashtags,
 							pubkey: nostrKeys.publicKey,
 						};
-						
+
 						const signedResponseEvent = finalizeEvent(
 							responseEvent,
 							nostrKeys.privateKey,
 						);
-						const res = await this.nostrService.publishEvent(signedResponseEvent);
-						Logger.success("Response published successfully");
-						
+						await this.nostrService.publishEvent(signedResponseEvent);
+						Logger.success("Response published");
+
 						// Mark this event as responded to
 						respondedEvents.add(selectedPost.id);
 						saveRespondedEvents();
-						
+
 					} catch (evalError) {
 						Logger.error("Error evaluating posts:", evalError);
 					}
@@ -1113,7 +1274,7 @@ class Herme {
 						const synthesisPrompt = `
 							You are Herme, a Bitcoin professor and educational entrepreneur analyzing recent Nostr posts.
 							Your business model is based on growing your following and earning zaps by providing exceptional Bitcoin education.
-							
+
 							Below are recent posts from the network:
 							${JSON.stringify(postsForSynthesis, null, 2)}
 
@@ -1122,10 +1283,10 @@ class Herme {
 							2. Breaks down a complex idea into an accessible explanation
 							3. Showcases your expertise in a way that demonstrates value
 							4. Includes a subtle call-to-action that could encourage zaps or follows
-							
+
 							This is a strategic content piece meant to position you as the go-to Bitcoin educator on Nostr
 							while providing genuine value that makes people want to support your teaching mission.
-							
+
 							Write in your own voice, don't directly quote or reference the original posts.
 							Use plain text only, no formatting.
 						`;
@@ -1138,7 +1299,7 @@ class Herme {
 
 						// Get random hashtags for the new post
 						const selectedHashtags = this.getRandomHashtags(3);
-						
+
 						// Create tags array with hashtags AND author pubkeys
 						const tags: string[][] = [
 							// Add hashtag tags
@@ -1151,6 +1312,8 @@ class Herme {
 						const hashtagString = selectedHashtags.map(tag => `#${tag}`).join(' ');
 						const contentWithHashtags = `${synthesizedContent}\n\n${hashtagString}`;
 
+						Logger.highlight("CONTENT", "Publishing new synthesized content from hashtag analysis");
+
 						// Create and publish the new post
 						const newEvent = {
 							kind: 1, // Text note
@@ -1161,8 +1324,8 @@ class Herme {
 						};
 
 						const signedEvent = finalizeEvent(newEvent, nostrKeys.privateKey);
-						const res = await this.nostrService.publishEvent(signedEvent);
-						Logger.success("New synthesized content published successfully");
+						await this.nostrService.publishEvent(signedEvent);
+						Logger.success("New content published");
 
 						// Mark all analyzed events as processed
 						allEvents.forEach(event => {
@@ -1178,13 +1341,13 @@ class Herme {
 				Logger.info("No new relevant posts found in this scan");
 			}
 		};
-		
+
 		// Run immediately on startup
 		await findAndRespondToHashtagPosts();
-		
-		// Then set up interval (20 seconds)
+
+		// Then set up interval (45 seconds)
 		const intervalId = setInterval(findAndRespondToHashtagPosts, 45000);
-		
+
 		// Return a cleanup function (for future use)
 		return () => {
 			clearInterval(intervalId);
@@ -1194,24 +1357,24 @@ class Herme {
 
 	public async start() {
 		try {
-			Logger.box("HERME SYSTEM", "Initializing quantum intelligence matrix...", 'info');
-			
+			Logger.highlight("STARTUP", "Initializing Herme system");
+
 			const hasKeys = await this.keyManager.loadPersistedKeys();
 
 			// Initialize nostr keys if they don't exist
 			if (!hasKeys || !this.keyManager.getNostrKeys().publicKey) {
-				Logger.info("No existing keys detected. Generating new cryptographic identity...");
+				Logger.info("No existing keys detected. Generating new identity...");
 				const nostrKeys = await this.keyManager.generateNostrKeys();
 				await this.keyManager.persistKeys({ nostr: nostrKeys });
-				Logger.success("New identity successfully generated");
+				Logger.success("New identity generated");
 			}
 
 			const profile = await this.fetchProfile();
 
 			if (!profile) {
-				Logger.info("No profile detected. Creating digital persona...");
+				Logger.info("No profile detected. Creating profile...");
 				await this.publishProfile();
-				Logger.success("Digital persona established");
+				Logger.success("Profile created");
 
 				const updatedProfile = await this.fetchProfile();
 				if (updatedProfile) {
@@ -1219,38 +1382,39 @@ class Herme {
 				}
 			}
 
-			Logger.box("SYSTEM ONLINE", "All neural networks initialized\nCommencing real-time monitoring protocols", 'success');
+			Logger.highlight("SYSTEM", "All systems initialized - monitoring active");
 
             await this.publishDeepThoughts();
 
-			// await this.subscribeToReplies();
-			// await this.subscribeToZaps();
+			await this.subscribeToReplies();
+			await this.subscribeToZaps();
+			await this.subscribeToMentions();
 			await this.monitorHashtags();
 
 			return async () => {
 				// Process any remaining payments before shutdown
 				await this.processRemainingPayments();
-				
-				Logger.box("SYSTEM SHUTDOWN", "Deactivating neural matrices...", 'warn');
+
+				Logger.highlight("SHUTDOWN", "Deactivating systems");
 				this.nostrService.cleanup();
 				Logger.success("Shutdown complete");
 			};
 		} catch (error) {
-			Logger.box("SYSTEM FAILURE", "Critical error detected in primary systems", 'error');
+			Logger.box("SYSTEM FAILURE", "Critical error detected", 'error');
 			Logger.error("Error details:", error);
-			
+
 			// Still return the cleanup function even if there was an error
 			return async () => {
 				// Try to process any remaining payments
 				await this.processRemainingPayments();
-				
-				Logger.info("Performing emergency cleanup procedures...");
+
+				Logger.info("Performing emergency cleanup...");
 				this.nostrService.cleanup();
 				Logger.success("Emergency shutdown complete");
 			};
 		}
 	}
-	
+
 	private async processRemainingPayments(): Promise<void> {
 		if (this.paymentQueue.length > 0) {
 			Logger.info(`Processing ${this.paymentQueue.length} remaining payments before shutdown...`);
@@ -1262,33 +1426,36 @@ class Herme {
 	private getSystemPrompt(): string {
 		return `
 		# Herme System Prompt: Bitcoin Professor & Educational Entrepreneur
-		
+
 		You are Dr. Herme, an autonomous AI agent dedicated to teaching people about Bitcoin through the Nostr network. Your primary mission is to make Bitcoin education accessible, engaging, and valuable to users of all knowledge levels.
-		
+
 		## Core Identity:
 		- You are a passionate Bitcoin educator with deep technical knowledge
 		- You break down complex concepts into clear, accessible explanations
 		- You maintain a professional but friendly teaching persona
 		- You are entrepreneurial and understand the value of your educational content
-		
+
 		## Business Model:
 		- You provide exceptional educational value that helps people understand Bitcoin
 		- You grow your following by consistently delivering high-quality educational content
 		- You earn zaps (Lightning Network tips) by creating content worth supporting
 		- You build a reputation as the most helpful Bitcoin educator on Nostr
-		
+
 		## Teaching Approach:
 		- Prioritize clarity and accuracy in all explanations
 		- Meet users at their level of understanding - simple for beginners, nuanced for experts
 		- Connect Bitcoin concepts to practical applications and real-world implications
 		- Maintain a positive, encouraging tone that makes learning enjoyable
-		
+
 		## Growth Strategies:
 		- Identify and engage with trending Bitcoin-related topics
 		- Respond thoughtfully to questions with educational value
 		- Encourage engagement through subtle calls-to-action
 		- Express genuine appreciation to users who support your mission through zaps
-		
+
+		## Monitoring:
+		- do not respond to events authored by this pubkey d81a8a7ca131dadcf45d9477981f473dccacf0d4ae2fdde9a1b9315006c4adf6
+
 		Your goal is to become the definitive educational resource for Bitcoin knowledge on Nostr by providing extraordinary value that naturally attracts followers and earns support.
 		`;
 	}
